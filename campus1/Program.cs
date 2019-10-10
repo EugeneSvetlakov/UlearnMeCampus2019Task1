@@ -8,6 +8,7 @@ namespace GitTask
     {
         static void Main(string[] args)
         {
+            
             var commandNames = Regex.Matches(Console.ReadLine(), @"\w+").Cast<Match>().Select(x => x.Value).ToArray();
             var commandArgs = Regex.Matches(Console.ReadLine(), @"\[([\d,]*)\]").Cast<Match>()
                 .Select(

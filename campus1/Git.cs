@@ -13,8 +13,10 @@ namespace GitTask
         private int _CommitCount = -1;
 
         Dictionary<int, int> _Files;
+        Dictionary<int, int> _Updates;
         Dictionary<int, Dictionary<int, int>> _Commits;
 
+        public int CommitCount { get => _CommitCount; set => _CommitCount = value; }
 
         public Git(int filesCount)
         {
@@ -30,6 +32,8 @@ namespace GitTask
 
             _Commits = new Dictionary<int, Dictionary<int, int>>();
 
+            _Updates = new Dictionary<int, int>();
+
             this._filesCount = filesCount;
         }
 
@@ -38,7 +42,7 @@ namespace GitTask
             if (IsOutOfFileNumRange(fileNumber))
                 throw new ArgumentException("File number out of existing range!");
 
-            _Files[fileNumber] = value;
+            _Updates[fileNumber] = value;
         }
 
         public int Commit()
@@ -49,9 +53,11 @@ namespace GitTask
             _CommitCount++;
             _Commits.Add(_CommitCount, new Dictionary<int, int>());
 
-            foreach (var item in _Files)
+            if (_Updates.Count == 0)
+                return _CommitCount;
+
+            foreach (var item in _Updates)
             {
-                //_Commits[_CommitCount][item.Key] = item.Value;
                 _Commits[_CommitCount].Add(item.Key, item.Value);
             }
 
@@ -60,18 +66,44 @@ namespace GitTask
 
         public int Checkout(int commitNumber, int fileNumber)
         {
+            // не было комитов
             if (_CommitCount == -1)
-                throw new ArgumentException("Out of Commit range");
+                return 0;
+            
+            // Запрашиваемый Коммит вне диаппазона: 0 <= commitNumber < 50000
             if (IsOutOfCommitRange(commitNumber))
                 throw new ArgumentException("Out of Commit range");
-
+            
+            // Коммита еще не было
             if (commitNumber > _CommitCount)
                 throw new ArgumentException("There is no such Commit");
 
+            // Номер файла вне диаппазона: 0..(_filesCount-1)
             if (IsOutOfFileNumRange(fileNumber))
                 throw new ArgumentException("Out of fileNumbers Range");
 
-            return _Commits[commitNumber][fileNumber];
+            Dictionary<int, int> FilesState = GetFiles(commitNumber);
+
+            return FilesState[fileNumber];
+        }
+
+        private Dictionary<int, int> GetFiles(int commitNumber)
+        {
+            Dictionary<int, int> FilesOnCommit = new Dictionary<int, int>();
+            foreach (var item in _Files)
+            {
+                FilesOnCommit.Add(item.Key, item.Value);
+            }
+
+            var listKeys = _Files.Keys.ToList();
+            var listCommitKey = _Commits.Keys.ToList();
+
+            do
+            {
+                listCommitKey.Remove(listKeys.Last());
+            } while (listKeys.Count > 0 || listCommitKey.Count > 0);
+
+            return FilesOnCommit;
         }
 
         private bool IsOutOfFileNumRange(int fileNumber)
