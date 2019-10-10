@@ -16,7 +16,7 @@ namespace GitTask
         /// Словарь отслеживаемых файлов
         /// </summary>
         Dictionary<int, Dictionary<int, int>> _Files;
-        
+
         /// <summary>
         /// Список файлов на обновление/добавление
         /// </summary>
@@ -28,6 +28,11 @@ namespace GitTask
                 throw new ArgumentException("Files Count out of supported range!");
 
             _Files = new Dictionary<int, Dictionary<int, int>>();
+
+            for (int i = 0; i < filesCount; i++)
+            {
+                _Files.Add(i, new Dictionary<int, int>());
+            }
 
             _ToUpdateList = new Dictionary<int, int>();
 
@@ -77,10 +82,6 @@ namespace GitTask
 
             if (IsOutOfFileNumRange(fileNumber))
                 throw new ArgumentException("Out of fileNumbers Range");
-
-            if (!_Files.ContainsKey(fileNumber))
-                return 0;
-                //throw new ArgumentException("No such file");
 
             var firstCommit = _Files[fileNumber].Keys.First();
             var lastCommit = _Files[fileNumber].Keys.Last();
