@@ -12,29 +12,23 @@ namespace GitTask
         private readonly int _minFilesCount = 1;
         private int _CommitCount = -1;
 
-        /// <summary>
-        /// Словарь отслеживаемых файлов
-        /// </summary>
-        Dictionary<int, Dictionary<int, int>> _Files;
+        Dictionary<int, int> _Files;
+        Dictionary<int, Dictionary<int, int>> _Commits;
 
-        /// <summary>
-        /// Список файлов на обновление/добавление
-        /// </summary>
-        private readonly Dictionary<int, int> _ToUpdateList;
 
         public Git(int filesCount)
         {
             if (IsOutOfFileCountRange(filesCount))
                 throw new ArgumentException("Files Count out of supported range!");
 
-            _Files = new Dictionary<int, Dictionary<int, int>>();
+            _Files = new Dictionary<int, int>();
 
             for (int i = 0; i < filesCount; i++)
             {
-                _Files.Add(i, new Dictionary<int, int>());
+                _Files.Add(i, 0);
             }
 
-            _ToUpdateList = new Dictionary<int, int>();
+            _Commits = new Dictionary<int, Dictionary<int, int>>();
 
             this._filesCount = filesCount;
         }
@@ -44,10 +38,7 @@ namespace GitTask
             if (IsOutOfFileNumRange(fileNumber))
                 throw new ArgumentException("File number out of existing range!");
 
-            if (_ToUpdateList.Count >= _maxCount)
-                throw new ArgumentException("MaxUpdateCount assigned");
-
-            _ToUpdateList[fileNumber] = value;
+            _Files[fileNumber] = value;
         }
 
         public int Commit()
@@ -56,16 +47,13 @@ namespace GitTask
                 throw new ArgumentException("Commits MaxSize assigned");
 
             _CommitCount++;
+            _Commits.Add(_CommitCount, new Dictionary<int, int>());
 
-            if (_ToUpdateList.Count == 0)
-                return _CommitCount;
-
-            foreach (var item in _ToUpdateList)
+            foreach (var item in _Files)
             {
-                _Files[item.Key][_CommitCount] = item.Value;
+                //_Commits[_CommitCount][item.Key] = item.Value;
+                _Commits[_CommitCount].Add(item.Key, item.Value);
             }
-
-            _ToUpdateList.Clear();
 
             return _CommitCount;
         }
@@ -83,16 +71,7 @@ namespace GitTask
             if (IsOutOfFileNumRange(fileNumber))
                 throw new ArgumentException("Out of fileNumbers Range");
 
-            var firstCommit = _Files[fileNumber].Keys.First();
-            var lastCommit = _Files[fileNumber].Keys.Last();
-
-            if (firstCommit > commitNumber)
-                throw new ArgumentException("File not yet commited");
-
-            if (_Files[fileNumber].ContainsKey(commitNumber))
-                return _Files[fileNumber][commitNumber];
-
-            return _Files[fileNumber][lastCommit];
+            return _Commits[commitNumber][fileNumber];
         }
 
         private bool IsOutOfFileNumRange(int fileNumber)
