@@ -8,7 +8,37 @@ namespace GitTask
     {
         static void Main(string[] args)
         {
-            
+
+            #region TestMyFunc
+
+            Git newGit = new Git(10);
+            try
+            {
+            Console.WriteLine($"Checkout: Commit=0, File=2, Data = {newGit.Checkout(0, 2)}; Expect = 0, {newGit.CommitCount}");
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine(e.Message);
+            }
+            Console.WriteLine($"Commit # {newGit.Commit()}; Expect: 0, {newGit.CommitCount}");
+            Console.WriteLine($"Checkout: Commit=0, File=2, Data = {newGit.Checkout(0, 2)}; Expect = 0, {newGit.CommitCount}");
+            newGit.Update(2, 5);
+            Console.WriteLine($"Checkout: Commit=0, File=2, Data = {newGit.Checkout(0, 2)}; Expect = 0, {newGit.CommitCount}");
+            try
+            {
+                Console.WriteLine($"Checkout: Commit=0, File=2, Data = {newGit.Checkout(1, 2)}; Expect = ArgumentException");
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine(e.Message);
+            }
+
+            Console.WriteLine($"Commit # {newGit.Commit()}; Expect = 1, {newGit.CommitCount}");
+            Console.WriteLine($"Checkout: Commit=0, File=2, Data = {newGit.Checkout(0, 2)}; Expect = 0, {newGit.CommitCount}");
+            Console.WriteLine($"Checkout: Commit=0, File=2, Data = {newGit.Checkout(1, 2)}; Expect = 5, { newGit.CommitCount}");
+
+            #endregion
+
             var commandNames = Regex.Matches(Console.ReadLine(), @"\w+").Cast<Match>().Select(x => x.Value).ToArray();
             var commandArgs = Regex.Matches(Console.ReadLine(), @"\[([\d,]*)\]").Cast<Match>()
                 .Select(

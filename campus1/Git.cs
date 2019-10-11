@@ -67,26 +67,35 @@ namespace GitTask
         public int Checkout(int commitNumber, int fileNumber)
         {
             // не было комитов
-            if (_CommitCount == -1)
-                return 0;
-            
+            if (_CommitCount < 0)
+                return _Files[fileNumber];
+
             // Запрашиваемый Коммит вне диаппазона: 0 <= commitNumber < 50000
             if (IsOutOfCommitRange(commitNumber))
                 throw new ArgumentException("Out of Commit range");
-            
+
             // Коммита еще не было
             if (commitNumber > _CommitCount)
+                throw new ArgumentException("There is no such Commit");
+
+            //
+            if(!_Commits.ContainsKey(commitNumber))
                 throw new ArgumentException("There is no such Commit");
 
             // Номер файла вне диаппазона: 0..(_filesCount-1)
             if (IsOutOfFileNumRange(fileNumber))
                 throw new ArgumentException("Out of fileNumbers Range");
 
-            Dictionary<int, int> FilesState = GetFiles(commitNumber);
+            var data = GetActualDataFromFile(fileNumber, commitNumber);
 
-            return FilesState[fileNumber];
+            return data;
         }
 
+        /// <summary>
+        /// Актуальные значения всех файлов 
+        /// </summary>
+        /// <param name="commitNumber"></param>
+        /// <returns></returns>
         private Dictionary<int, int> GetFiles(int commitNumber)
         {
             Dictionary<int, int> FilesOnCommit = new Dictionary<int, int>();
@@ -95,15 +104,52 @@ namespace GitTask
                 FilesOnCommit.Add(item.Key, item.Value);
             }
 
-            var listKeys = _Files.Keys.ToList();
-            var listCommitKey = _Commits.Keys.ToList();
+            var listFileNums = _Files.Keys.ToList();
+            var listCommitKey = _Commits
+                .Where(c => c.Key < commitNumber)
+                .ToDictionary(d => d.Key, d => d.Value)
+                .Keys.ToList();
 
-            do
+            for (int comitKey = listCommitKey.Count - 1; comitKey >= 0; comitKey--)
             {
-                listCommitKey.Remove(listKeys.Last());
-            } while (listKeys.Count > 0 || listCommitKey.Count > 0);
+                var commit = _Commits[listCommitKey.ElementAt(comitKey)];
+                var keysInComit = commit.Keys.Select(k => listFileNums.FirstOrDefault(el => el == k)).ToList();
+
+                foreach (var fileKey in keysInComit)
+                {
+                    FilesOnCommit[fileKey] = commit[fileKey];
+                }
+
+                listFileNums.RemoveAll(e => keysInComit.Contains(e));
+                if (listFileNums.Count == 0) break;
+            }
 
             return FilesOnCommit;
+        }
+
+        /// <summary>
+        /// Поиск файла по всем коммитам, если там нет, то берем из _Files
+        /// </summary>
+        /// <param name="fileNumber"></param>
+        /// <returns></returns>
+        private int GetActualDataFromFile(int fileNumber, int commitNumber)
+        {
+            bool hasFileInCommit = _Commits[commitNumber].ContainsKey(fileNumber);
+
+            if (hasFileInCommit)
+                return _Commits[commitNumber][fileNumber];
+
+            var commit = _Commits
+                .Where(c => c.Key < commitNumber)
+                .ToDictionary(d => d.Key, d => d.Value)
+                .LastOrDefault(c => c.Value.ContainsKey(fileNumber));
+
+            if (commit.Equals(default(KeyValuePair<int, Dictionary<int, int>>)))
+                if (commit.Value != null)
+                    if(commit.Value.Equals(default(Dictionary<int,int>)))
+                        return commit.Value[fileNumber];
+
+            return _Files[fileNumber];
         }
 
         private bool IsOutOfFileNumRange(int fileNumber)
